@@ -1,0 +1,64 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.DS_Store
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+.tox/
+.coverage
+.coverage.*
+.cache
+.hypothesis/
+.pytest_cache/
+.webassets-cache
+.scrapy
+.ipynb_checkpoints
+.python-version
+.ipynb_checkpoints/
+
+# Media files
+*.pyc
+*.avi
+*.mp4
+*.gz
+*.h5
+*.pyc
+*.tar.gz
+*.pb
+*.npz
+
+# Test outputs
+vision/assets/output/
+vision/assets/dataset/
+vision/assets/training/Annotations/
+vision/assets/training/Images/
+vision/assets/training/TFRecords/
+vision/google/weights/
+ros/bags/
+
+videos/
+diff/assets/points/*.ply
+diff/assets/rgb/*.png

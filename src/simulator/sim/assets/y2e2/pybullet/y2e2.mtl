@@ -1,0 +1,29 @@
+#
+## Alias OBJ Material File
+# Exported from SketchUp, (c) 2000-2012 Trimble Navigation Limited
+
+newmtl Paint
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 2
+Ka 0.5000 0.5000 0.5000
+Kd 0.5880 0.5880 0.5880
+Ks 0.1000 0.1000 0.1000
+Ke 0.0000 0.0000 0.0000
+map_Kd paint.png
+
+newmtl Floor
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 2
+Ka 1.0000 1.0000 1.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd concrete.png
