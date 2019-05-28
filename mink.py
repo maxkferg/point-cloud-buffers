@@ -84,7 +84,7 @@ def load_file(file_name, voxel_size):
     return quantized_coords[inds], feats[inds], pcd
 
 
-if __name__ == '__main__':
+def run_mink():
     config = parser.parse_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -121,3 +121,6 @@ if __name__ == '__main__':
 
     # Visualize the input point cloud and the prediction
     o3d.draw_geometries([pcd, pred_pcd])
+
+if __name__=="__main__":
+    run_mink()
