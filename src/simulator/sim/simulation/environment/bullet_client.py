@@ -20,15 +20,20 @@ class BulletClient(object):
         `pybullet.SHARED_MEMORY` connects to an existing simulation.
     """
     self._shapes = {}
+    self._client = pybullet.connect(pybullet.DIRECT)
+    return
 
     print("Creating new pybullet env with connection_mode = %s"%connection_mode)
     if connection_mode is None:
-      self._client = pybullet.connect(pybullet.SHARED_MEMORY)
+      self._client = -1#pybullet.connect(pybullet.SHARED_MEMORY)
       if self._client >= 0:
+        print("PyBullet using shared memory")
         return
       else:
+        print("Shared memory failed")
+        print("Conn mode:", connection_mode, options)
         connection_mode = pybullet.DIRECT
-    self._client = pybullet.connect(connection_mode)
+    self._client = pybullet.connect(connection_mode, options=options)
 
   def __del__(self):
     """Clean up connection if not already done."""

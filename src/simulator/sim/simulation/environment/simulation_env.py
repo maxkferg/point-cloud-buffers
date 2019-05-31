@@ -396,7 +396,8 @@ class SimRobotEnv(gym.Env):
 
         for y in range(height):
             if y%10==0:
-                print('row:',y)
+                pass
+                #print('row:',y)
             for x in range(width):
                 z = depth[y,x]
                 if z==1.0: continue

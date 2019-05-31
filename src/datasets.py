@@ -1,20 +1,17 @@
 """
 Define training datasets for point age task
 """
+import numpy as np
 import open3d as o3d
+from torch.utils.data import Dataset
 from simulator.pointstream import SceneGenerator
 from simulator.buffer import PointBuffer
-
-
-mongo "mongodb+srv://lumintemp-rram3.mongodb.net/test"
-db.auth("lumin", "HjCkT5Mw8FT6exB9CKxe")
-
-
+import MinkowskiEngine as ME
 
 def crop_points(pcd, min_bound, max_bound):
     """Return two numpy arrays, points and colors"""
     points = np.array(pcd.points)
-    colors = np.array(pcd.points)
+    colors = np.array(pcd.colors)
     keep = np.logical_and(
         np.any(points>=min_bound, axis=1),
         np.any(points<=max_bound, axis=1))
@@ -27,7 +24,8 @@ def quantize_points(points, feats, voxel_size):
     Return coords, quantized_points, feats
     """
     quantized_coords = np.floor(points / voxel_size)
-    inds = ME.utils.sparse_quantize(coords)
+    inds = ME.utils.sparse_quantize(quantized_coords)
+    quantized_coords = quantized_coords[inds]
     quantized_points = points[inds]
     quantized_feats = feats[inds]
     return quantized_coords, quantized_points, quantized_feats
@@ -63,7 +61,7 @@ class SimulatorDataset(Dataset):
         self.voxel_size = voxel_size
 
     def __len__(self):
-        return 100
+        return 500
 
     def __getitem__(self, idx):
 
@@ -75,29 +73,41 @@ class SimulatorDataset(Dataset):
         points, colors, _ = self.point_buffer.get_frame()
         min_bound = np.min(points)
         max_bound = np.max(points)
-        new_coords, _, new_feats = quantize_points(points, feats, self.voxel_size)
-        new_labels = np.ones((new_points.shape[0], 1))
+        new_coords, _, new_feats = quantize_points(points, colors, self.voxel_size)
+        new_labels = np.ones((new_coords.shape[0], 1))
 
         # Get the valid points at time t
-        valid_pcd = point_buffer.get_valid_pointcloud()
+        valid_pcd = self.point_buffer.get_buffer_points()
         valid_points, valid_feats = crop_points(valid_pcd, min_bound, max_bound)
         valid_coords, _, valid_feats = quantize_points(valid_points, valid_feats, self.voxel_size)
-        valid_labels = np.ones((valid_points.shape[0], 0))
+        valid_labels = np.ones((valid_coords.shape[0], 1))
 
         # Get the expired points at time t
-        expired_pcd = point_buffer.get_expired_pointcloud()
+        expired_pcd = self.point_buffer.get_expired_points()
+        #if len(expired_pcd.points):
         expired_points, expired_feats = crop_points(expired_pcd, min_bound, max_bound)
-        expired_coords, _, expired_feats = quantize_points(expired_points, expired_feats, self.voxel_size)
-        expired_labels = np.zeros((expired_points.shape[0], 0))
+        if len(expired_points):
+            expired_coords, _, expired_feats = quantize_points(expired_points, expired_feats, self.voxel_size)
+            expired_labels = np.zeros((expired_coords.shape[0], 1))
+        else:
+            expired_coords = np.zeros((0,3))
+            expired_feats = np.zeros((0,3))
+            expired_labels = np.zeros((0,1))
+         
 
         # Add time dimension to the coordinates
-        new_coords = add_time_dimension(new_coords,t=1)
-        valid_coords = add_time_dimension(valid_coords,t=0)
+        new_coords = add_time_dimension(new_coords,t=2)
+        valid_coords = add_time_dimension(valid_coords,t=1)
         expired_coords = add_time_dimension(expired_coords,t=0)
+
+        #print("new coords:",new_coords)
+        #print("valid coords:",valid_coords)
+        #print("expired coords",expired_coords)
 
         # Stack everything together
         coords = np.vstack((new_coords, valid_coords, expired_coords))
         feats = np.vstack((new_feats, valid_feats, expired_feats))
         labels = np.vstack((new_labels, valid_labels, expired_labels))
 
+        #print('Datapoint:', coords.shape, feats.shape, labels.shape)  
         return (coords, feats, labels)
