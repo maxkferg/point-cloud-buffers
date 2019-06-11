@@ -2,6 +2,8 @@
 
 Dynamic Point Cloud Models with Point Cloud Buffers. This repository contains the code for training a sparse high-dimensional convolutional neural network for predicting valid/invalid points in a large point cloud. The sparse neural network is written using Pytorch and [Minkowski Engine](https://github.com/StanfordVL/MinkowskiEngine).
 
+![Dynamic Point Cloud Buffer](/docs/animation.gif?raw=true "Point Cloud Buffer")
+
 ## Setup
 Setup the Conda environment:
 ```sh
