@@ -57,6 +57,7 @@ vision/assets/training/Annotations/
 vision/assets/training/Images/
 vision/assets/training/TFRecords/
 vision/google/weights/
+src/simulator/dataset/
 ros/bags/
 
 videos/
