@@ -1,12 +1,17 @@
 """
 Define training datasets for point age task
 """
+import os
 import numpy as np
 import open3d as o3d
-from torch.utils.data import Dataset
 from simulator.pointstream import SceneGenerator
 from simulator.buffer import PointBuffer
 import MinkowskiEngine as ME
+import open3d as o3d
+from torch.utils.data import Dataset
+#from simulator.pointstream import SceneGenerator
+#from simulator.buffer import PointBuffer
+
 
 def crop_points(pcd, min_bound, max_bound):
     """Return two numpy arrays, points and colors"""
@@ -111,3 +116,185 @@ class SimulatorDataset(Dataset):
 
         #print('Datapoint:', coords.shape, feats.shape, labels.shape)  
         return (coords, feats, labels)
+
+
+
+
+class TD3Dataset(Dataset):
+    """
+    Generate a (coord, feat, label) triplet
+    Output:
+        coord: A Nx4 tensor with dimensions x,y,z,t
+               The full pointcloud resides at dimension t=0
+               New points are assigned to the t=1 dimension
+        feat: A Nx3 tensor containing R,G,and B channels
+        label: A Nx1 tensor containing 1 for valid points and 0 for expired points
+    """
+    def __init__(self, directory, voxel_size):
+        """
+        """
+        self.directory = directory
+        self.voxel_size = voxel_size
+
+    def __len__(self):
+        """Return the dataset length"""
+        i = 0
+        while True:
+            path, _, _ = self._get_filepaths(i)
+            if not os.path.exists(path):
+                break
+            i+=1
+        if i==0:
+            raise ValueError("Could not find dataset in: {}".format(self.directory))
+        return i 
+
+
+    def __getitem__(self, idx):
+        """Return a (coord, feat, label) tuple"""
+        new_pcd, valid_pcd, expired_pcd = self._get_pointclouds(idx)
+
+        # Get the frame of new points at time t
+        new_points = np.array(new_pcd.points)
+        new_feats = np.array(new_pcd.colors)
+        new_coords, _, new_feats = quantize_points(new_points, new_feats, self.voxel_size)
+        new_labels = np.ones((new_points.shape[0], 1))
+
+        # Get the area that we are going to train on
+        min_bound = np.min(new_points)
+        max_bound = np.max(new_points)
+
+        # Get the valid points at time t
+        valid_points, valid_feats = crop_points(valid_pcd, min_bound, max_bound)
+        valid_coords, _, valid_feats = quantize_points(valid_points, valid_feats, self.voxel_size)
+        valid_labels = np.ones((valid_points.shape[0], 0))
+
+        # Get the expired points at time t
+        expired_points, expired_feats = crop_points(expired_pcd, min_bound, max_bound)
+        expired_coords, _, expired_feats = quantize_points(expired_points, expired_feats, self.voxel_size)
+        expired_labels = np.zeros((expired_points.shape[0], 0))
+
+        # Add time dimension to the coordinates
+        new_coords = add_time_dimension(new_coords,t=1)
+        valid_coords = add_time_dimension(valid_coords,t=0)
+        expired_coords = add_time_dimension(expired_coords,t=0)
+
+        # Stack everything together
+        coords = np.vstack((new_coords, valid_coords, expired_coords))
+        feats = np.vstack((new_feats, valid_feats, expired_feats))
+        labels = np.vstack((new_labels, valid_labels, expired_labels))
+
+        return (coords, feats, labels)
+
+
+    def _get_filepaths(self,i):
+        """Return dataset filepath"""
+        current = os.path.join(self.directory, "current-{0}.pcd".format(i))
+        valid = os.path.join(self.directory, "valid-{0}.pcd".format(i))
+        expired = os.path.join(self.directory, "expired-{0}.pcd".format(i))
+        return current, valid, expired
+
+
+    def _get_pointclouds(self,i):
+        """Return the PCD files for the current, valid and expired pointclouds"""
+        pointclouds = []
+        current, valid, expired = self._get_filepaths(i)
+        if not os.path.exists(valid):
+            raise IndexError("Data point with path {} does not exist".format(valid))
+        for filepath in [current, valid, expired]:
+            if os.path.exists(filepath):
+                pcd = o3d.io.read_point_cloud(filepath)
+            else:
+                pcd = o3d.PointCloud()
+            pointclouds.append(pcd)
+        return pointclouds
+
+
+
+class TurtlebotDataset(Dataset):
+    """
+    Generate a (coord, feat, label) triplet
+    Output:
+        coord: A Nx4 tensor with dimensions x,y,z,t
+               The full pointcloud resides at dimension t=0
+               New points are assigned to the t=1 dimension
+        feat: A Nx3 tensor containing R,G,and B channels
+        label: A Nx1 tensor containing 1 for valid points and 0 for expired points
+    """
+    def __init__(self, directory, voxel_size):
+        """
+        """
+        self.directory = directory
+        self.voxel_size = voxel_size
+
+    def __len__(self):
+        """Return the dataset length"""
+        i = 0
+        while True:
+            path, _, _ = self._get_filepaths(i)
+            if not os.path.exists(path):
+                break
+            i+=1
+        if i==0:
+            raise ValueError("Could not find dataset in: {}".format(self.directory))
+        return i 
+
+
+    def __getitem__(self, idx):
+        """Return a (coord, feat, label) tuple"""
+        new_pcd, valid_pcd, expired_pcd = self._get_pointclouds(idx)
+
+        # Get the frame of new points at time t
+        new_points = np.array(new_pcd.points)
+        new_feats = np.array(new_pcd.colors)
+        new_coords, _, new_feats = quantize_points(new_points, new_feats, self.voxel_size)
+        new_labels = np.ones((new_points.shape[0], 1))
+
+        # Get the area that we are going to train on
+        min_bound = np.min(new_points)
+        max_bound = np.max(new_points)
+
+        # Get the valid points at time t
+        valid_points, valid_feats = crop_points(valid_pcd, min_bound, max_bound)
+        valid_coords, _, valid_feats = quantize_points(valid_points, valid_feats, self.voxel_size)
+        valid_labels = np.ones((valid_points.shape[0], 0))
+
+        # Get the expired points at time t
+        expired_points, expired_feats = crop_points(expired_pcd, min_bound, max_bound)
+        expired_coords, _, expired_feats = quantize_points(expired_points, expired_feats, self.voxel_size)
+        expired_labels = np.zeros((expired_points.shape[0], 0))
+
+        # Add time dimension to the coordinates
+        new_coords = add_time_dimension(new_coords,t=1)
+        valid_coords = add_time_dimension(valid_coords,t=0)
+        expired_coords = add_time_dimension(expired_coords,t=0)
+
+        # Stack everything together
+        coords = np.vstack((new_coords, valid_coords, expired_coords))
+        feats = np.vstack((new_feats, valid_feats, expired_feats))
+        labels = np.vstack((new_labels, valid_labels, expired_labels))
+
+        return (coords, feats, labels)
+
+
+    def _get_filepaths(self,i):
+        """Return dataset filepath"""
+        current = os.path.join(self.directory, "current-{0}.pcd".format(i))
+        valid = os.path.join(self.directory, "valid-{0}.pcd".format(i))
+        expired = os.path.join(self.directory, "expired-{0}.pcd".format(i))
+        return current, valid, expired
+
+
+    def _get_pointclouds(self,i):
+        """Return the PCD files for the current, valid and expired pointclouds"""
+        pointclouds = []
+        current, valid, expired = self._get_filepaths(i)
+        if not os.path.exists(valid):
+            raise IndexError("Data point with path {} does not exist".format(valid))
+        for filepath in [current, valid, expired]:
+            if os.path.exists(filepath):
+                pcd = o3d.io.read_point_cloud(filepath)
+            else:
+                pcd = o3d.PointCloud()
+            pointclouds.append(pcd)
+        return pointclouds
+
