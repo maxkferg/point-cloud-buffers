@@ -28,17 +28,16 @@ python train.py --dataset=simulator/dataset/points2.ply' --voxel_size=0.005 --we
 Videos of the raw dataset and trained models can be generated with `visualize.py`
 
 ```sh
-python visualize.py```
+python visualize.py
 ```
 
 ## Synthetic Datasets
 Synthetic datasets are created by running our autonomous turtlebot simulator and recording the resulting pointclouds. Datasets are stored in the src/simulator/dataset/ directory. The synthetic dataset is loaded into Pytorch by the `datasets.TD3Loader`.
 
-
 ## Exporting the environment
 Setup the Conda environment:
 ```sh
-conda env create -f environment.yml
+conda env export --no-builds > environment.yml
 ```
 
 ## License
